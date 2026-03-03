@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: stationery-mongo-prod
+    restart: unless-stopped
+    volumes:
+      - mongo_data_prod:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stationery-backend-prod
+    restart: unless-stopped
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/stationery_showcase
+      - JWT_SECRET=changeme-in-prod
+      - CLIENT_ORIGINS=http://localhost:3000,http://localhost:8080
+    ports:
+      - "5003:5003"
+    depends_on:
+      - mongo
+
+  storefront:
+    build:
+      context: ./storefront
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: http://localhost:4000
+    container_name: stationery-storefront-prod
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+    ports:
+      - "5001:5001"
+    depends_on:
+      - backend
+
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        API_BASE_URL: http://localhost:4000
+    container_name: stationery-admin-prod
+    restart: unless-stopped
+    ports:
+      - "5002:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data_prod:
+
