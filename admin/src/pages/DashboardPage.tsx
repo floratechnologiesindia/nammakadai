@@ -2,10 +2,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { type AuthUser } from "../api/client";
 
-type CountResponse = {
-  total: number;
-};
-
 async function fetchJson<T>(path: string, token: string | null): Promise<T> {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
   const headers = new Headers();

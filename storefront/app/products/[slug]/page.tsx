@@ -17,25 +17,19 @@ type Product = {
 
 async function fetchProduct(slug: string): Promise<Product | null> {
   const baseUrl = getApiBaseUrl();
-  const res = await fetch(`${baseUrl}/api/products/${slug}`, { next: { revalidate: 300 } });
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${baseUrl}/api/products/${slug}`, { cache: "no-store" });
+    if (!res.ok) {
+      return null;
+    }
+    return res.json();
+  } catch {
     return null;
   }
-  return res.json();
 }
 
-export const dynamic = "force-static";
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const baseUrl = getApiBaseUrl();
-  const res = await fetch(`${baseUrl}/api/products?limit=1000`, { next: { revalidate: 300 } });
-  if (!res.ok) {
-    return [];
-  }
-  const data = (await res.json()) as { items?: { slug: string }[] };
-  return (data.items ?? []).map((product) => ({ slug: product.slug }));
-}
+// Avoid build-time data fetching so Docker image builds don't require a running backend
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -43,31 +37,18 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await fetchProduct(slug);
-
-  if (!product) {
-    return {
-      title: "Product not found",
-      description: "This stationery item could not be found at NammaKadai.",
-    };
-  }
-
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const url = `${siteUrl}/products/${product.slug}`;
-
-  const baseDescription =
-    product.description ||
-    `Buy ${product.title} from NammaKadai Stationery. Discover curated notebooks, pens, and desk essentials.`;
-  const description = baseDescription.slice(0, 155);
+  const url = `${siteUrl}/products/${slug}`;
+  const description =
+    "Discover stationery details, pricing, and specs for this NammaKadai product.";
 
   return {
-    title: product.title,
+    title: `Product details`,
     description,
     openGraph: {
-      title: product.title,
+      title: `Product details`,
       description,
       url,
-      // Use a valid OpenGraph type supported by Next.js
       type: "website",
     },
   };

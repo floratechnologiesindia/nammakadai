@@ -14,16 +14,22 @@ type Product = {
 
 async function fetchFeaturedProducts(): Promise<Product[]> {
   const baseUrl = getApiBaseUrl();
-  const res = await fetch(
-    `${baseUrl}/api/products?featured=true&limit=8`,
-    { next: { revalidate: 60 } }
-  );
-  if (!res.ok) {
+  try {
+    const res = await fetch(`${baseUrl}/api/products?featured=true&limit=8`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json();
+    return data.items ?? [];
+  } catch {
+    // During Docker image builds the backend may not be reachable
     return [];
   }
-  const data = await res.json();
-  return data.items ?? [];
 }
+
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const products = await fetchFeaturedProducts();

@@ -40,12 +40,19 @@ async function fetchProducts(
   if (search) url.searchParams.set("search", search);
   if (category) url.searchParams.set("category", category);
 
-  const res = await fetch(url.toString(), { next: { revalidate: 60 } });
-  if (!res.ok) {
+  try {
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    if (!res.ok) {
+      return { items: [], page: 1, totalPages: 1, total: 0 };
+    }
+    return res.json();
+  } catch {
+    // During Docker image builds the backend may not be reachable
     return { items: [], page: 1, totalPages: 1, total: 0 };
   }
-  return res.json();
 }
+
+export const dynamic = "force-dynamic";
 
 export default async function ProductsPage({
   searchParams,
